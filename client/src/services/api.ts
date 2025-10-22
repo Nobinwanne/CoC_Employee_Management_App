@@ -1,16 +1,16 @@
 import axios from 'axios';
-import { Employee, Department, WorkUnit } from '../types';
+import { Employee, Department, WorkUnit, Organization } from '../types';
 
 const API_URL = 'http://localhost:5000/api';
 
 //Employees
 export const getEmployees = () => axios.get<Employee[]>(`${API_URL}/employees`);
 export const createEmployee = (employeeData: Omit<Employee, 'Id' | 'CreatedAt'>) => 
-  axios.post(`${API_URL}/Employees`, employeeData);
+  axios.post(`${API_URL}/employees`, employeeData);
 export const updateEmployee = (id: number, employeeData: Omit<Employee, 'Id' | 'CreatedAt'>) => 
-  axios.put(`${API_URL}/Employees/${id}`, employeeData);
+  axios.put(`${API_URL}/employees/${id}`, employeeData);
 export const deleteEmployee = (id: number) => 
-  axios.delete(`${API_URL}/Employees/${id}`);
+  axios.delete(`${API_URL}/employees/${id}`);
 
 // Departments
 export const getDepartments = () => axios.get<Department[]>(`${API_URL}/departments`);
@@ -29,3 +29,12 @@ export const updateWorkUnit = (id: number, unitData: Omit<WorkUnit, 'Id'>) =>
   axios.put(`${API_URL}/workunits/${id}`, unitData);
 export const deleteWorkUnit = (id: number) => 
   axios.delete(`${API_URL}/workunits/${id}`);
+
+//Organization
+export const getOrganizations = () => axios.get<Organization[]>(`${API_URL}/organizations`);
+export const createOrganization = (organizationData: Omit<Organization, 'id'>) =>
+    axios.post(`${API_URL}/organizations`, organizationData);
+export const updateOrganization = (id: number, organizationData: Omit<Organization, 'id'>) =>
+    axios.put(`${API_URL}/organizations/${id}`, organizationData);
+export const deleteOrganization = (id: number) => 
+  axios.delete(`${API_URL}/organizations/${id}`);

@@ -1,36 +1,56 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
+import { useState } from 'react';
+import './App.css';
+import EmployeeList from './components/EmployeeList';
+import DepartmentList from './components/DepartmentList';
+//import WorkUnitList from './components/WorkUnitList';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeTab, setActiveTab] = useState<'users' | 'departments' | 'workunits'>('users');
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="App">
+      <header style={{ padding: '20px', borderBottom: '2px solid #ddd' }}>
+        <h1>Management System</h1>
+        <nav style={{ marginTop: '10px' }}>
+          <button 
+            onClick={() => setActiveTab('users')}
+            style={{ 
+              marginRight: '10px', 
+              padding: '10px 20px',
+              fontWeight: activeTab === 'users' ? 'bold' : 'normal'
+            }}
+          >
+            Users
+          </button>
+          <button 
+            onClick={() => setActiveTab('departments')}
+            style={{ 
+              marginRight: '10px', 
+              padding: '10px 20px',
+              fontWeight: activeTab === 'departments' ? 'bold' : 'normal'
+            }}
+          >
+            Departments
+          </button>
+          <button 
+            onClick={() => setActiveTab('workunits')}
+            style={{ 
+              padding: '10px 20px',
+              fontWeight: activeTab === 'workunits' ? 'bold' : 'normal'
+            }}
+          >
+            Work Units
+          </button>
+        </nav>
+      </header>
+
+      <main>
+        {activeTab === 'users' && <EmployeeList />}
+        {activeTab === 'departments' && <DepartmentList />}
+        {/* {activeTab === 'workunits' && <WorkUnitList />} */}
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;

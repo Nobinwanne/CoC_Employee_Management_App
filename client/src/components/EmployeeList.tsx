@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Employee, Department } from '../types';
 import { getEmployees, getDepartments, updateEmployee, deleteEmployee, createEmployee } from '../services/api';
+import '../styles/DataTable.css'
 
 function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([]);

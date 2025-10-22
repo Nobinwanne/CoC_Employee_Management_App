@@ -1,0 +1,268 @@
+.header {
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 2rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 3rem;
+}
+
+.header-brand {
+  flex-shrink: 0;
+}
+
+.header-brand h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  margin: 0.5rem 0 0 0;
+  font-size: 1.05rem;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+.header-nav {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.nav-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 1rem 2.25rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.nav-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.nav-button:active {
+  transform: translateY(0);
+}
+
+.nav-button.active {
+  background: white;
+  color: #2c3e50;
+  border-color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.nav-button.active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.4);
+}
+
+.nav-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.nav-text {
+  font-size: 1.1rem;
+}
+
+/* Larger desktops (1600px+) - give even more space */
+@media (min-width: 1600px) {
+  .header-container {
+    max-width: 1900px;
+    padding: 2.25rem 5rem;
+  }
+
+  .header-brand h1 {
+    font-size: 2.5rem;
+  }
+
+  .header-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .nav-button {
+    padding: 1.1rem 2.5rem;
+    font-size: 1.15rem;
+    min-width: 180px;
+  }
+
+  .nav-icon {
+    font-size: 1.5rem;
+  }
+}
+
+/* Standard desktop (1280-1600px) */
+@media (max-width: 1600px) and (min-width: 1280px) {
+  .header-container {
+    max-width: 1400px;
+    padding: 1.75rem 3rem;
+  }
+
+  .header-brand h1 {
+    font-size: 2rem;
+  }
+
+  .nav-button {
+    padding: 0.9rem 2rem;
+    min-width: 150px;
+  }
+}
+
+/* Laptop (1024-1280px) */
+@media (max-width: 1280px) and (min-width: 1024px) {
+  .header-container {
+    max-width: 1200px;
+    padding: 1.5rem 2.5rem;
+  }
+
+  .header-brand h1 {
+    font-size: 1.85rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .nav-button {
+    padding: 0.8rem 1.75rem;
+    font-size: 1rem;
+    min-width: 140px;
+  }
+
+  .nav-icon {
+    font-size: 1.25rem;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .header-container {
+    padding: 1.5rem 2rem;
+    max-width: 960px;
+  }
+
+  .header-brand h1 {
+    font-size: 1.75rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .nav-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    min-width: auto;
+  }
+
+  .nav-icon {
+    font-size: 1.2rem;
+  }
+}
+
+/* Mobile - compact but functional */
+@media (max-width: 768px) {
+  .header-container {
+    padding: 1.25rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .header-brand {
+    text-align: center;
+  }
+
+  .header-brand h1 {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .header-nav {
+    width: 100%;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .nav-button {
+    flex: 1;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+    justify-content: center;
+    min-width: auto;
+  }
+
+  .nav-icon {
+    font-size: 1.15rem;
+  }
+
+  .nav-text {
+    font-size: 0.95rem;
+  }
+}
+
+/* Very small mobile */
+@media (max-width: 480px) {
+  .header-container {
+    padding: 1rem;
+  }
+
+  .header-brand h1 {
+    font-size: 1.3rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .header-nav {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .nav-button {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .nav-text {
+    display: none;
+  }
+
+  .nav-icon {
+    font-size: 1.5rem;
+  }
+}

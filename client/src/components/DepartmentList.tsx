@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Department } from '../types';
-import { getDepartments, updateDepartment, deleteDepartment, createDepartment } from '../services/api';
+import { createDepartment, getDepartments, updateDepartment, deleteDepartment } from '../services/api';
 
 function DepartmentList() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<Department>>({});
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newDept, setNewDept] = useState({ id: 0, name: '', description: '' });
+  const [newDept, setNewDept] = useState({ Id: 0, DepartmentName: '', Description: '', Organization: '', OrganizationId: 0 });
 
   useEffect(() => {
     fetchDepartments();
@@ -23,8 +23,8 @@ function DepartmentList() {
   };
 
   const handleEdit = (dept: Department) => {
-    setEditingId(dept.id);
-    setEditForm({ name: dept.name, description: dept.description });
+    setEditingId(dept.Id);
+    setEditForm({ DepartmentName: dept.DepartmentName, Description: dept.Description, Organization: dept.Organization });
   };
 
   const handleUpdate = async (id: number) => {
@@ -52,7 +52,7 @@ function DepartmentList() {
       await createDepartment(newDept);
       await fetchDepartments();
       setShowAddForm(false);
-      setNewDept({ id: 0, name: '', description: '' });
+      setNewDept({ Id: 0, DepartmentName: '', Description: '', Organization: '', OrganizationId: 0 });
     } catch (err) {
       console.error('Error creating department:', err);
     }
@@ -72,15 +72,15 @@ function DepartmentList() {
           <input
             type="text"
             placeholder="Name"
-            value={newDept.name}
-            onChange={(e) => setNewDept({ ...newDept, name: e.target.value })}
+            value={newDept.DepartmentName}
+            onChange={(e) => setNewDept({ ...newDept, DepartmentName: e.target.value })}
             style={{ marginRight: '10px' }}
           />
           <input
             type="text"
             placeholder="Description"
-            value={newDept.description}
-            onChange={(e) => setNewDept({ ...newDept, description: e.target.value })}
+            value={newDept.Description}
+            onChange={(e) => setNewDept({ ...newDept, Description: e.target.value })}
             style={{ marginRight: '10px' }}
           />
           <button onClick={handleAdd}>Save</button>
@@ -97,37 +97,37 @@ function DepartmentList() {
         </thead>
         <tbody>
           {departments.map(dept => (
-            <tr key={dept.id} style={{ borderBottom: '1px solid #eee' }}>
+            <tr key={dept.Id} style={{ borderBottom: '1px solid #eee' }}>
               <td style={{ padding: '10px' }}>
-                {editingId === dept.id ? (
+                {editingId === dept.Id ? (
                   <input
-                    value={editForm.name || ''}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    value={editForm.DepartmentName || ''}
+                    onChange={(e) => setEditForm({ ...editForm, DepartmentName: e.target.value })}
                   />
                 ) : (
-                  dept.name
+                  dept.DepartmentName
                 )}
               </td>
               <td style={{ padding: '10px' }}>
-                {editingId === dept.id ? (
+                {editingId === dept.Id ? (
                   <input
-                    value={editForm.description || ''}
-                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    value={editForm.Description || ''}
+                    onChange={(e) => setEditForm({ ...editForm, Description: e.target.value })}
                   />
                 ) : (
-                  dept.description
+                  dept.Description
                 )}
               </td>
               <td style={{ padding: '10px' }}>
-                {editingId === dept.id ? (
+                {editingId === dept.Id ? (
                   <>
-                    <button onClick={() => handleUpdate(dept.id)}>Save</button>
+                    <button onClick={() => handleUpdate(dept.Id)}>Save</button>
                     <button onClick={() => setEditingId(null)}>Cancel</button>
                   </>
                 ) : (
                   <>
                     <button onClick={() => handleEdit(dept)}>Edit</button>
-                    <button onClick={() => handleDelete(dept.id)}>Delete</button>
+                    <button onClick={() => handleDelete(dept.Id)}>Delete</button>
                   </>
                 )}
               </td>

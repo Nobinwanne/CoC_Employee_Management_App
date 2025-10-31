@@ -3,10 +3,10 @@ import './App.css';
 import EmployeeList from './components/EmployeeList';
 import DepartmentList from './components/DepartmentList';
 import Header from './components/Header';
-//import WorkUnitList from './components/WorkUnitList';
+import WorkUnitList from './components/WorkUnitList';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'employees' | 'departments' | 'workunits'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'workunits' | 'departments' | 'organizations'>('employees');
 
   return (
     <div className="App">
@@ -14,8 +14,9 @@ function App() {
 
       <main className="main-content">
         {activeTab === 'employees' && <EmployeeList />}
+           {activeTab === 'workunits' && <WorkUnitList />}
         {activeTab === 'departments' && <DepartmentList />}
-        {/* {activeTab === 'workunits' && <WorkUnitList />} */}
+           {/* {activeTab === 'workunits' && <OrganizationList />} */}
       </main>
     </div>
   );

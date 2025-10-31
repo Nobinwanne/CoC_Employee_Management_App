@@ -2,8 +2,8 @@ import '../styles/Header.css';
 //import cityLogo from '../assets/City-Logo-.jpg'
 
 interface HeaderProps {
-  activeTab: 'employees' | 'departments' | 'workunits';
-  onTabChange: (tab: 'employees' | 'departments' | 'workunits') => void;
+  activeTab: 'employees' | 'workunits' | 'departments' | 'organizations';
+  onTabChange: (tab: 'employees' | 'workunits' | 'departments' | 'organizations') => void;
 }
 
 function Header({ activeTab, onTabChange }: HeaderProps) {
@@ -14,7 +14,7 @@ function Header({ activeTab, onTabChange }: HeaderProps) {
       <div className="header-container">
         <div className="header-brand">
           <h1>Employee Management System</h1>
-          <p className="header-subtitle">Employee, Department & Work Unit Administration</p>
+          <p className="header-subtitle">Employee, Work Unit & Department Administration</p>
         </div>
 
         <nav className="header-nav">
@@ -25,19 +25,19 @@ function Header({ activeTab, onTabChange }: HeaderProps) {
             <span className="nav-icon">👥</span>
             <span className="nav-text">Employees</span>
           </button>
+           <button
+            className={`nav-button ${activeTab === 'workunits' ? 'active' : ''}`}
+            onClick={() => onTabChange('workunits')}
+          >
+            <span className="nav-icon">⚙️</span>
+            <span className="nav-text">Work Units</span>
+          </button>
           <button
             className={`nav-button ${activeTab === 'departments' ? 'active' : ''}`}
             onClick={() => onTabChange('departments')}
           >
             <span className="nav-icon">🏢</span>
             <span className="nav-text">Departments</span>
-          </button>
-          <button
-            className={`nav-button ${activeTab === 'workunits' ? 'active' : ''}`}
-            onClick={() => onTabChange('workunits')}
-          >
-            <span className="nav-icon">⚙️</span>
-            <span className="nav-text">Work Units</span>
           </button>
         </nav>
       </div>

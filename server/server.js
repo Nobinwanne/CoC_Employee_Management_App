@@ -1,94 +1,88 @@
 const express = require('express');
 const sql = require('mssql');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 require('dotenv').config();
+
+const { getPool, closePool } = require('./config/database');
+const usersRouter = require('./routes/employees');
+const departmentsRouter = require('./routes/departments');
+const workunitsRouter = require('./routes/workunits');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// SQL Server configuration
-const config = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
-  database: process.env.DB_NAME,
-  options: {
-    encrypt: true,
-    trustServerCertificate: true
-  }
-};
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
-// Database connection pool
-let pool;
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Employee Management API is running',
+    timestamp: new Date().toISOString()
+  });
+});
 
-// Initialize database connection
-async function initDB() {
+// API Routes
+app.use('/api/users', usersRouter);
+app.use('/api/departments', departmentsRouter);
+app.use('/api/workunits', workunitsRouter);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+  });
+});
+
+// Initialize database and start server
+async function startServer() {
   try {
-    pool = await sql.connect(config);
-    console.log('Connected to SQL Server');
+    // Test database connection
+    await getPool();
+    
+    // Start server
+    app.listen(PORT, () => {
+      console.log('='.repeat(50));
+      console.log(`✓ Server running on http://localhost:${PORT}`);
+      console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`✓ Database: ${process.env.DB_NAME}`);
+      console.log('='.repeat(50));
+    });
   } catch (err) {
-    console.error('Database connection failed:', err);
+    console.error('Failed to start server:', err);
+    process.exit(1);
   }
 }
 
-initDB();
-
-// Sample routes
-app.get('/api/employees', async (req, res) => {
-  try {
-    const result = await pool.request().query('SELECT * FROM Employees');
-    res.json(result.recordset);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\nShutting down gracefully...');
+  await closePool();
+  process.exit(0);
 });
 
-app.post('/api/employees', async (req, res) => {
-  try {
-    const { name, email, departmentId } = req.body;
-    await pool.request()
-      .input('name', sql.NVarChar, name)
-      .input('email', sql.NVarChar, email)
-      .input('departmentId', sql.Int, departmentId)
-      .query('INSERT INTO Employees (Name, Email, DepartmentId) VALUES (@name, @email, @departmentId)');
-    res.json({ message: 'Employee created' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+process.on('SIGTERM', async () => {
+  console.log('\nShutting down gracefully...');
+  await closePool();
+  process.exit(0);
 });
 
-app.put('/api/employees/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, email, departmentId } = req.body;
-    await pool.request()
-      .input('id', sql.Int, id)
-      .input('name', sql.NVarChar, name)
-      .input('email', sql.NVarChar, email)
-      .input('departmentId', sql.Int, departmentId)
-      .query('UPDATE Employees SET Name = @name, Email = @email, DepartmentId = @departmentId WHERE Id = @id');
-    res.json({ message: 'Employee updated' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/employees/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.request()
-      .input('id', sql.Int, id)
-      .query('DELETE FROM Employees WHERE Id = @id');
-    res.json({ message: 'Employee deleted' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start the server
+startServer();

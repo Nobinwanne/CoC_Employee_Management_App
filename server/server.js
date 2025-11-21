@@ -1,11 +1,10 @@
 const express = require('express');
-const sql = require('mssql');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
 const { getPool, closePool } = require('./config/database');
-const usersRouter = require('./routes/employees');
+const employeesRouter = require('./routes/employees');
 const departmentsRouter = require('./routes/departments');
 const workunitsRouter = require('./routes/workunits');
 
@@ -33,7 +32,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/api/users', usersRouter);
+app.use('/api/employees', employeesRouter);
 app.use('/api/departments', departmentsRouter);
 app.use('/api/workunits', workunitsRouter);
 

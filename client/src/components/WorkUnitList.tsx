@@ -4,10 +4,10 @@ import { createWorkUnit, getWorkUnits, updateWorkUnit, deleteWorkUnit } from '..
 
 function DepartmentList() {
   const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<WorkUnit>>({});
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newWorkUnit, setNewWorkUnit] = useState({ Id: 0, WorkUnitName: '', Description: '', Department: '', DepartmentId: 0 });
+  const [newWorkUnit, setNewWorkUnit] = useState({ Id: '', WorkUnitName: '', Description: '', Department: '', DepartmentId: ''});
 
   useEffect(() => {
     fetchWorkUnits();
@@ -30,7 +30,7 @@ function DepartmentList() {
         DepartmentId: workUnit.DepartmentId });
   };
 
-  const handleUpdate = async (id: number) => {
+  const handleUpdate = async (id: string) => {
     try {
       await updateWorkUnit(id, editForm as Omit<WorkUnit, 'Id'>);
       await fetchWorkUnits();
@@ -40,7 +40,7 @@ function DepartmentList() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Delete this workunit?')) return;
     try {
       await deleteWorkUnit(id);
@@ -55,7 +55,7 @@ function DepartmentList() {
       await createWorkUnit(newWorkUnit);
       await fetchWorkUnits();
       setShowAddForm(false);
-      setNewWorkUnit({ Id: 0, WorkUnitName: '', Description: '', Department: '', DepartmentId: 0 });
+      setNewWorkUnit({ Id: '', WorkUnitName: '', Description: '', Department: '', DepartmentId: '' });
     } catch (err) {
       console.error('Error creating workunit:', err);
     }

@@ -6,11 +6,11 @@ import '../styles/DataTable.css'
 function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Employee>>({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEmployee, setNewEmployee] = useState({ 
-   Id: 0,
+   Id: '',
     FirstName: '',
     LastName: '',
     EmployeeId: 0,
@@ -21,17 +21,17 @@ function EmployeeList() {
     Level: 0,
     ReportingLevel: 0,
     DateEmployed: '',
-    SupervisorId: 0,
+    SupervisorId: '',
     Supervisor: '',
     Manager: '',
-    ManagerId: 0,
+    ManagerId: '',
     IsSupervisor: true,
     IsManager: true,
     IsPDRRequired: true,
     IsLFLicRequired: true,
     IsWorksiteRequired: true,
     Status: true,
-    WorkUnitId: 0,
+    WorkUnitId: '',
     CreatedAt: '',
   });
   const [loading, setLoading] = useState(true);
@@ -60,11 +60,12 @@ function EmployeeList() {
     setEditingId(employee.Id);
     setEditForm({ 
       FirstName: employee.FirstName, 
+      LastName: employee.LastName, 
       Email: employee.Email, 
       WorkUnitId: employee.WorkUnitId });
   };
 
-  const handleUpdate = async (id: number) => {
+  const handleUpdate = async (id: string) => {
     try {
       await updateEmployee(id, editForm as Omit<Employee, 'Id' | 'CreatedAt'>);
       await fetchData();
@@ -76,7 +77,7 @@ function EmployeeList() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this employee?')) return;
     
     try {
@@ -94,7 +95,7 @@ function EmployeeList() {
       await fetchData();
       setShowAddForm(false);
       setNewEmployee({
-       Id: 0,
+       Id: '',
     FirstName: '',
     LastName: '',
     EmployeeId: 0,
@@ -105,17 +106,17 @@ function EmployeeList() {
     Level: 0,
     ReportingLevel: 0,
     DateEmployed: '',
-    SupervisorId: 0,
+    SupervisorId: '',
     Supervisor: '',
     Manager: '',
-    ManagerId: 0,
+    ManagerId: '',
     IsSupervisor: true,
     IsManager: true,
     IsPDRRequired: true,
     IsLFLicRequired: true,
     IsWorksiteRequired: true,
     Status: true,
-    WorkUnitId: 0,
+    WorkUnitId: '',
     CreatedAt: '',
     });
     } catch (err) {
@@ -124,7 +125,7 @@ function EmployeeList() {
     }
   };
 
-  const getWorkUnitName = (wuId: number) => {
+  const getWorkUnitName = (wuId: string) => {
     return workUnits.find(wu => wu.Id === wuId)?.WorkUnitName || 'Unknown';
   };
 
@@ -166,7 +167,7 @@ function EmployeeList() {
           />
           <select
             value={newEmployee.WorkUnitId}
-            onChange={(e) => setNewEmployee({ ...newEmployee, WorkUnitId: Number(e.target.value) })}
+            onChange={(e) => setNewEmployee({ ...newEmployee, WorkUnitId: (e.target.value) })}
             style={{ marginRight: '10px', padding: '5px' }}
           >
             <option value={0}>Select WorkUnit</option>
@@ -184,7 +185,7 @@ function EmployeeList() {
             <th style={{ padding: '10px', textAlign: 'left' }}>First Name</th>
              <th style={{ padding: '10px', textAlign: 'left' }}>Last Name</th>
             <th style={{ padding: '10px', textAlign: 'left' }}>Email</th>
-            <th style={{ padding: '10px', textAlign: 'left' }}>WorkUnit</th>
+            <th style={{ padding: '10px', textAlign: 'left' }}>Title</th>
             <th style={{ padding: '10px', textAlign: 'left' }}>Actions</th>
           </tr>
         </thead>
@@ -210,7 +211,7 @@ function EmployeeList() {
                     onChange={(e) => setEditForm({ ...editForm, LastName: e.target.value })}
                   />
                 ) : (
-                  employee.FirstName
+                  employee.LastName
                 )}
               </td>
               <td style={{ padding: '10px' }}>
@@ -224,11 +225,22 @@ function EmployeeList() {
                   employee.Email
                 )}
               </td>
+               <td style={{ padding: '10px' }}>
+                {editingId === employee.Id ? (
+                  <input
+                    type="title"
+                    value={editForm.Title || ''}
+                    onChange={(e) => setEditForm({ ...editForm, Title: e.target.value })}
+                  />
+                ) : (
+                  employee.Title
+                )}
+              </td>
               <td style={{ padding: '10px' }}>
                 {editingId === employee.Id ? (
                   <select
                     value={editForm.WorkUnitId || 0}
-                    onChange={(e) => setEditForm({ ...editForm, WorkUnitId: Number(e.target.value) })}
+                    onChange={(e) => setEditForm({ ...editForm, WorkUnitId: (e.target.value) })}
                   >
                     {workUnits.map(wu => (
                       <option key={wu.Id} value={wu.Id}>{wu.WorkUnitName}</option>

@@ -1,5 +1,5 @@
 export interface Employee {
-    Id: number;
+    Id: string;
     FirstName: string;
     LastName: string;
     EmployeeId: number;
@@ -11,8 +11,8 @@ export interface Employee {
     ReportingLevel: number;
     DateEmployed: string;
     Supervisor: string;
-    SupervisorId: number;
-    ManagerId: number;
+    SupervisorId: string;
+    ManagerId: string;
     Manager: string;
     IsSupervisor: boolean;
     IsManager: boolean;
@@ -20,34 +20,34 @@ export interface Employee {
     IsLFLicRequired: boolean;
     IsWorksiteRequired: boolean;
     Status: boolean;
-    WorkUnitId: number;
+    WorkUnitId: string;
     CreatedAt?: string;
 }
 
 export interface WorkUnit {
-    Id: number;
+    Id: string;
     WorkUnitName: string;
     Description: string;
-    DepartmentId: number;
+    DepartmentId: string;
     Department: string;
 }
 
 export interface Department {
-    Id: number;
+    Id: string;
     DepartmentName: string;
     Description: string;
-    OrganizationId: number;
+    OrganizationId: string;
     Organization: string;
 }
 
 export interface Organization {
-    Id: number;
+    Id: string;
     OrganizationName: string;
     Description: string;
 }
 
 export interface User {
-    Id: number;
+    Id: string;
     UserFirstName: string;
     UserLastName: string;
     UserEmail: string;

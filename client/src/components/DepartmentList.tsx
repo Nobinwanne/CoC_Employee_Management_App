@@ -4,10 +4,10 @@ import { createDepartment, getDepartments, updateDepartment, deleteDepartment } 
 
 function DepartmentList() {
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Department>>({});
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newDept, setNewDept] = useState({ Id: 0, DepartmentName: '', Description: '', Organization: '', OrganizationId: 0 });
+  const [newDept, setNewDept] = useState({ Id: '', DepartmentName: '', Description: '', Organization: '', OrganizationId: '' });
 
   useEffect(() => {
     fetchDepartments();
@@ -27,7 +27,7 @@ function DepartmentList() {
     setEditForm({ DepartmentName: dept.DepartmentName, Description: dept.Description, Organization: dept.Organization });
   };
 
-  const handleUpdate = async (id: number) => {
+  const handleUpdate = async (id: string) => {
     try {
       await updateDepartment(id, editForm as Omit<Department, 'Id'>);
       await fetchDepartments();
@@ -37,7 +37,7 @@ function DepartmentList() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Delete this department?')) return;
     try {
       await deleteDepartment(id);
@@ -52,7 +52,7 @@ function DepartmentList() {
       await createDepartment(newDept);
       await fetchDepartments();
       setShowAddForm(false);
-      setNewDept({ Id: 0, DepartmentName: '', Description: '', Organization: '', OrganizationId: 0 });
+      setNewDept({ Id: '', DepartmentName: '', Description: '', Organization: '', OrganizationId: '' });
     } catch (err) {
       console.error('Error creating department:', err);
     }

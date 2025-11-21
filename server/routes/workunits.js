@@ -8,10 +8,11 @@ router.get('/', async (req, res) => {
     const pool = await getPool();
     const result = await pool.request()
       .query(`
-        SELECT w.*, d.Name as DepartmentName 
+        SELECT 
+          w.Id,
+          w.Description as Name
         FROM WorkUnits w
-        LEFT JOIN Departments d ON w.DepartmentId = d.Id
-        ORDER BY w.Name
+        ORDER BY w.Description
       `);
     res.json(result.recordset);
   } catch (err) {
@@ -26,11 +27,12 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const pool = await getPool();
     const result = await pool.request()
-      .input('id', sql.Int, id)
+      .input('id', sql.UniqueIdentifier, id)
       .query(`
-        SELECT w.*, d.Name as DepartmentName 
+        SELECT 
+          w.Id,
+          w.Description as Name
         FROM WorkUnits w
-        LEFT JOIN Departments d ON w.DepartmentId = d.Id
         WHERE w.Id = @id
       `);
     
@@ -48,25 +50,28 @@ router.get('/:id', async (req, res) => {
 // Create new work unit
 router.post('/', async (req, res) => {
   try {
-    const { Name, DepartmentId } = req.body;
+    const { Name } = req.body;
     
-    if (!Name || !DepartmentId) {
-      return res.status(400).json({ error: 'Name and DepartmentId are required' });
+    if (!Name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
     const pool = await getPool();
-    const result = await pool.request()
-      .input('name', sql.NVarChar(100), Name)
-      .input('departmentId', sql.Int, DepartmentId)
+    const newId = require('crypto').randomUUID();
+    
+    await pool.request()
+      .input('id', sql.UniqueIdentifier, newId)
+      .input('description', sql.NVarChar(50), Name)
+      .input('createdBy', sql.NVarChar(50), 'system')
+      .input('updatedBy', sql.NVarChar(50), 'system')
       .query(`
-        INSERT INTO WorkUnits (Name, DepartmentId) 
-        OUTPUT INSERTED.Id
-        VALUES (@name, @departmentId)
+        INSERT INTO WorkUnits (Id, Description, CreatedBy, DateCreated, UpdatedBy, DateUpdated) 
+        VALUES (@id, @description, @createdBy, GETDATE(), @updatedBy, GETDATE())
       `);
     
     res.status(201).json({ 
       message: 'Work unit created successfully',
-      id: result.recordset[0].Id 
+      id: newId
     });
   } catch (err) {
     console.error('Error creating work unit:', err);
@@ -78,20 +83,20 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { Name, DepartmentId } = req.body;
+    const { Name } = req.body;
     
-    if (!Name || !DepartmentId) {
-      return res.status(400).json({ error: 'Name and DepartmentId are required' });
+    if (!Name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
     const pool = await getPool();
     const result = await pool.request()
-      .input('id', sql.Int, id)
-      .input('name', sql.NVarChar(100), Name)
-      .input('departmentId', sql.Int, DepartmentId)
+      .input('id', sql.UniqueIdentifier, id)
+      .input('description', sql.NVarChar(50), Name)
+      .input('updatedBy', sql.NVarChar(50), 'system')
       .query(`
         UPDATE WorkUnits 
-        SET Name = @name, DepartmentId = @departmentId 
+        SET Description = @description, UpdatedBy = @updatedBy, DateUpdated = GETDATE() 
         WHERE Id = @id
       `);
     
@@ -111,8 +116,9 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const pool = await getPool();
+    
     const result = await pool.request()
-      .input('id', sql.Int, id)
+      .input('id', sql.UniqueIdentifier, id)
       .query('DELETE FROM WorkUnits WHERE Id = @id');
     
     if (result.rowsAffected[0] === 0) {

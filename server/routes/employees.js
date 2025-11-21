@@ -7,7 +7,23 @@ router.get('/', async (req, res) => {
   try {
     const pool = await getPool();
     const result = await pool.request()
-      .query('SELECT * FROM Users ORDER BY CreatedAt DESC');
+      .query(`
+        SELECT 
+          e.Id,
+          e.FirstName,
+          e.LastName,
+          e.Email,
+          e.EmployeeLogin,
+          e.Title,
+          e.WorkUnitId,
+          w.Description as 'Work Unit',
+          e.DepartmentId,
+          d.DepartmentName as DepartmentName
+        FROM Employees e
+        LEFT JOIN Departments d ON e.DepartmentId = d.Id
+        LEFT JOIN WorkUnits w ON e.WorkUnitId = w.Id
+        ORDER BY e.LastName, e.FirstName
+      `);
     res.json(result.recordset);
   } catch (err) {
     console.error('Error fetching employees:', err);
@@ -21,8 +37,22 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const pool = await getPool();
     const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query('SELECT * FROM Employees WHERE Id = @id');
+      .input('id', sql.UniqueIdentifier, id)
+      .query(`
+        SELECT 
+          e.Id,
+          e.FirstName,
+          e.LastName,
+          e.Email,
+          e.EmployeeLogin,
+          e.Title,
+          e.WorkUnitId,
+          w.Description as 'Work Unit',
+          e.DepartmentId,
+          d.DepartmentName as DepartmentName
+        FROM Employees e
+        WHERE e.Id = @id
+      `);
     
     if (result.recordset.length === 0) {
       return res.status(404).json({ error: 'Employee not found' });
@@ -38,136 +68,117 @@ router.get('/:id', async (req, res) => {
 // Create new employee
 router.post('/', async (req, res) => {
   try {
-    const { 
-        Id,
-    FirstName,
-    LastName,
-    EmployeeId,
-    Email,
-    EmployeeLogin,
-    Title,
-    Step,
-    Level,
-    ReportingLevel,
-    DateEmployed,
-    Supervisor,
-    SupervisorId,
-    ManagerId,
-    Manager,
-    IsSupervisor,
-    IsManager,
-    IsPDRRequired,
-    IsLFLicRequired,
-    IsWorksiteRequired,
-    Status,
-    WorkUnitId
-    } = req.body;
+    const { FirstName, LastName, Email, WorkUnitId, DepartmentId } = req.body;
     
-    // Validation
-    if (
-    !FirstName ||
-    !LastName ||
-    !EmployeeId ||
-    !Email ||
-    !EmployeeLogin ||
-    !Title ||
-    !Step ||
-    !Level ||
-    !ReportingLevel ||
-    !DateEmployed ||
-    !Supervisor ||
-    !SupervisorId ||
-    !ManagerId ||
-    !Manager ||
-    !IsSupervisor ||
-    !IsManager ||
-    !IsPDRRequired ||
-    !IsLFLicRequired ||
-    !IsWorksiteRequired ||
-    !Status ||
-    !WorkUnitId
-    ) {
-      return res.status(400).json({ error: 'All fields are required' });
+    if (!FirstName || !LastName || !Email || !WorkUnitId || !DepartmentId) {
+      return res.status(400).json({ error: 'FirstName, LastName Email, WorkUnitId and DepartmentId are required' });
     }
 
+    // Split name into FirstName and LastName
+    const nameParts = Name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || firstName;
+
     const pool = await getPool();
-    const result = await pool.request()
-      .input('firstName', sql.NVarChar(100), FirstName)
-      .input('lastName', sql.NVarChar(100), LastName)
-      .input('employeeId', sql.NVarChar(100), EmployeeId)
-      .input('email', sql.NVarChar(100), Email)
-      .input('employeeLogin', sql.Int, EmployeeLogin)
-      .input('workUnitId', sql.Int, WorkUnitId)
+    const newId = require('crypto').randomUUID();
+    
+    await pool.request()
+      .input('id', sql.UniqueIdentifier, newId)
+      .input('firstName', sql.NVarChar(50), firstName)
+      .input('lastName', sql.NVarChar(50), lastName)
+      .input('email', sql.NVarChar(50), Email)
+      .input('departmentId', sql.UniqueIdentifier, DepartmentId)
+      .input('createdBy', sql.NVarChar(50), 'system')
+      .input('updatedBy', sql.NVarChar(50), 'system')
       .query(`
-        INSERT INTO Users (FirstName, LastName, EmployeeId, Email, EmployeeLogin, Title, Step, Level, ReportingLevel,
-        DateEmployed, Supervisor, SupervisorId, ManagerId, Manager, IsSupervisor, IsManager, IsPDRRequired, IsLFLicenseRequired,
-        IsWorksiteRequired, Status, WorkUnitId, CreatedAt) 
-        OUTPUT INSERTED.Id
-        VALUES (@firstName, @lastName, @employeeId, @email, @employeeLogin, GETDATE())
+        INSERT INTO Employees (
+          Id, FirstName, LastName, Email, DepartmentId, 
+          IsDeleted, CreatedBy, DateCreated, UpdatedBy, DateUpdated
+        ) 
+        VALUES (
+          @id, @firstName, @lastName, @email, @departmentId,
+          0, @createdBy, GETDATE(), @updatedBy, GETDATE()
+        )
       `);
     
     res.status(201).json({ 
-      message: 'User created successfully',
-      id: result.recordset[0].Id 
+      message: 'Employee created successfully',
+      id: newId
     });
   } catch (err) {
-    console.error('Error creating user:', err);
-    res.status(500).json({ error: 'Failed to create user', details: err.message });
+    console.error('Error creating employee:', err);
+    res.status(500).json({ error: 'Failed to create employee', details: err.message });
   }
 });
 
-// Update user
+// Update employee
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { FirstName, LastName, Email, WorkUnitId } = req.body;
+    const { Name, Email, DepartmentId } = req.body;
     
-    // Validation
-    if (!FirstName || !LastName || !Email || !WorkUnitId) {
-      return res.status(400).json({ error: 'FirstName, LastName, Email, and WorkUnitId are required' });
+    if (!Name || !Email || !DepartmentId) {
+      return res.status(400).json({ error: 'Name, Email, and DepartmentId are required' });
     }
+
+    // Split name into FirstName and LastName
+    const nameParts = Name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || firstName;
 
     const pool = await getPool();
     const result = await pool.request()
-      .input('id', sql.Int, id)
-      .input('firstName', sql.NVarChar(100), FirstName)
-       .input('lastName', sql.NVarChar(100), LastName)
-      .input('email', sql.NVarChar(100), Email)
-      .input('workUnitId', sql.Int, WorkUnitId)
+      .input('id', sql.UniqueIdentifier, id)
+      .input('firstName', sql.NVarChar(50), firstName)
+      .input('lastName', sql.NVarChar(50), lastName)
+      .input('email', sql.NVarChar(50), Email)
+      .input('departmentId', sql.UniqueIdentifier, DepartmentId)
+      .input('updatedBy', sql.NVarChar(50), 'system')
       .query(`
-        UPDATE Users 
-        SET firstName = @FirstName, Email = @email, workUnitId = @WorkUnitId 
+        UPDATE Employees 
+        SET 
+          FirstName = @firstName, 
+          LastName = @lastName,
+          Email = @email, 
+          DepartmentId = @departmentId,
+          UpdatedBy = @updatedBy,
+          DateUpdated = GETDATE()
         WHERE Id = @id
       `);
     
     if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Employee not found' });
     }
     
-    res.json({ message: 'User updated successfully' });
+    res.json({ message: 'Employee updated successfully' });
   } catch (err) {
-    console.error('Error updating user:', err);
-    res.status(500).json({ error: 'Failed to update user', details: err.message });
+    console.error('Error updating employee:', err);
+    res.status(500).json({ error: 'Failed to update employee', details: err.message });
   }
 });
 
-// Delete user
+// Delete employee (soft delete)
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const pool = await getPool();
     const result = await pool.request()
-      .input('id', sql.Int, id)
-      .query('DELETE FROM Users WHERE Id = @id');
+      .input('id', sql.UniqueIdentifier, id)
+      .input('updatedBy', sql.NVarChar(50), 'system')
+      .query(`
+        UPDATE Employees 
+        SET IsDeleted = 1, UpdatedBy = @updatedBy, DateUpdated = GETDATE()
+        WHERE Id = @id
+      `);
     
     if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Employee not found' });
     }
     
-    res.json({ message: 'User deleted successfully' });
+    res.json({ message: 'Employee deleted successfully' });
   } catch (err) {
-    console.error('Error deleting user:', err);
-    res.status(500).json({ error: 'Failed to delete user', details: err.message });
+    console.error('Error deleting employee:', err);
+    res.status(500).json({ error: 'Failed to delete employee', details: err.message });
   }
 });
 

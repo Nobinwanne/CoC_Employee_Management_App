@@ -1,22 +1,20 @@
 import { useState } from 'react';
-import './App.css';
-import EmployeeList from './components/EmployeeList';
-import DepartmentList from './components/DepartmentList';
 import Header from './components/Header';
+import DepartmentList from './components/DepartmentList';
 import WorkUnitList from './components/WorkUnitList';
+import EmployeeList from './components/EmployeeList';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'employees' | 'workunits' | 'departments' | 'organizations'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'departments' | 'workunits'>('employees');
 
   return (
-    <div className="App">
+    <div className="min-h-screen bg-gray-50">
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="main-content">
+      <main className="mx-auto max-w-7xl py-8">
         {activeTab === 'employees' && <EmployeeList />}
-           {activeTab === 'workunits' && <WorkUnitList />}
         {activeTab === 'departments' && <DepartmentList />}
-           {/* {activeTab === 'workunits' && <OrganizationList />} */}
+        {activeTab === 'workunits' && <WorkUnitList />}
       </main>
     </div>
   );

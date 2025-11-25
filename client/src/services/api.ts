@@ -13,7 +13,18 @@ export const deleteEmployee = (Id: string) =>
   axios.delete(`${API_URL}/employees/${Id}`);
 
 // Work Units
-export const getWorkUnits = () => axios.get<WorkUnit[]>(`${API_URL}/workunits`);
+// export const getWorkUnits = () => axios.get<WorkUnit[]>(`${API_URL}/workunits`);
+// export const createWorkUnit = (unitData: Omit<WorkUnit, 'Id'>) => 
+//   axios.post(`${API_URL}/workunits`, unitData);
+// export const updateWorkUnit = (id: string, unitData: Omit<WorkUnit, 'Id'>) => 
+//   axios.put(`${API_URL}/workunits/${id}`, unitData);
+// export const deleteWorkUnit = (id: string) => 
+//   axios.delete(`${API_URL}/workunits/${id}`);
+
+export const getWorkUnits = (wuId?: string) => {
+  const url = wuId ? `${API_URL}/workunits/${wuId}` : `${API_URL}/workunits`;
+  return axios.get<WorkUnit[]>(url);
+};
 export const createWorkUnit = (unitData: Omit<WorkUnit, 'Id'>) => 
   axios.post(`${API_URL}/workunits`, unitData);
 export const updateWorkUnit = (id: string, unitData: Omit<WorkUnit, 'Id'>) => 

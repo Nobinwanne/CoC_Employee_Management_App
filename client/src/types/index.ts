@@ -36,8 +36,8 @@ export interface Department {
     Id: string;
     DepartmentName: string;
     Description: string;
-    OrganizationId: string;
-    Organization: string;
+    OrganizationId?: string;
+    Organization?: string;
 }
 
 export interface Organization {

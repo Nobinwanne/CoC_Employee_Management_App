@@ -1,23 +1,16 @@
-import { useState } from 'react';
-import Header from './components/Header';
-import DepartmentList from './components/DepartmentList';
-import WorkUnitList from './components/WorkUnitList';
-import EmployeeList from './components/EmployeeList';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import EmployeeList from "./components/EmployeeList";
+import DepartmentList from "./components/DepartmentList";
+import WorkUnitList from "./components/WorkUnitList";
 
-function App() {
-  const [activeTab, setActiveTab] = useState<'employees' | 'departments' | 'workunits'>('employees');
-
+export default function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
-
-      <main className="mx-auto max-w-7xl py-8">
-        {activeTab === 'employees' && <EmployeeList />}
-        {activeTab === 'departments' && <DepartmentList />}
-        {activeTab === 'workunits' && <WorkUnitList />}
-      </main>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/employees" element={<EmployeeList />} />
+        <Route path="/departments" element={<DepartmentList />} />
+        <Route path="/workunits" element={<WorkUnitList />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;

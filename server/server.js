@@ -1,20 +1,23 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-require('dotenv').config();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { getPool, closePool, testConnection } from "./config/database.js";
 
-const { getPool, closePool } = require('./config/database');
-const employeesRouter = require('./routes/employees');
-const departmentsRouter = require('./routes/departments');
-const workunitsRouter = require('./routes/workunits');
+// Import routes
+import employeesRouter from "./routes/employees.js";
+import departmentsRouter from "./routes/departments.js";
+import workunitsRouter from "./routes/workunits.js";
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -23,62 +26,120 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'Employee Management API is running',
-    timestamp: new Date().toISOString()
+app.get("/health", (req, res) => {
+  res.json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    database: pool ? "Connected" : "Disconnected",
   });
 });
 
+// Database connection test endpoint
+app.get("/api/test-connection", async (req, res) => {
+  try {
+    const isConnected = await testConnection();
+    if (isConnected) {
+      res.json({
+        success: true,
+        message: "Database connection successful",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Database connection failed",
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: "Database connection test failed",
+      message: err.message,
+    });
+  }
+});
+
 // API Routes
-app.use('/api/employees', employeesRouter);
-app.use('/api/departments', departmentsRouter);
-app.use('/api/workunits', workunitsRouter);
+app.use("/api/employees", employeesRouter);
+app.use("/api/departments", departmentsRouter);
+app.use("/api/workunits", workunitsRouter);
+
+// Root endpoint
+app.get("/", (req, res) => {
+  res.json({
+    message: "Employee Management API",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      testConnection: "/api/test-connection",
+      employees: "/api/employees",
+      departments: "/api/departments",
+      workunits: "/api/workunits",
+    },
+  });
+});
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({
+    success: false,
+    error: "Route not found",
+    path: req.path,
+  });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error', 
-    details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+  console.error("Error:", err);
+  res.status(500).json({
+    success: false,
+    error: "Internal server error",
+    message: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
 
-// Initialize database and start server
+// Start server
+let pool = null;
+
 async function startServer() {
   try {
     // Test database connection
-    await getPool();
-    
-    // Start server
+    console.log("Testing database connection...");
+    pool = await getPool();
+    console.log("✓ Database connected successfully");
+
+    // Start Express server
     app.listen(PORT, () => {
-      console.log('='.repeat(50));
-      console.log(`✓ Server running on http://localhost:${PORT}`);
-      console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`✓ Database: ${process.env.DB_NAME}`);
-      console.log('='.repeat(50));
+      console.log("");
+      console.log("═══════════════════════════════════════════════");
+      console.log(`✓ Server running on port ${PORT}`);
+      console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`✓ Database: ${process.env.DB_DATABASE}`);
+      console.log("");
+      console.log("API Endpoints:");
+      console.log(`  - Health Check:  http://localhost:${PORT}/health`);
+      console.log(`  - Employees:     http://localhost:${PORT}/api/employees`);
+      console.log(
+        `  - Departments:   http://localhost:${PORT}/api/departments`,
+      );
+      console.log(`  - Work Units:    http://localhost:${PORT}/api/workunits`);
+      console.log("═══════════════════════════════════════════════");
+      console.log("");
     });
   } catch (err) {
-    console.error('Failed to start server:', err);
+    console.error("Failed to start server:", err);
     process.exit(1);
   }
 }
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\nShutting down gracefully...');
+process.on("SIGINT", async () => {
+  console.log("\nShutting down gracefully...");
   await closePool();
   process.exit(0);
 });
 
-process.on('SIGTERM', async () => {
-  console.log('\nShutting down gracefully...');
+process.on("SIGTERM", async () => {
+  console.log("\nShutting down gracefully...");
   await closePool();
   process.exit(0);
 });

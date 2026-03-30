@@ -7,6 +7,7 @@ import {
   XMarkIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { employeeAPI, departmentAPI, workUnitAPI } from "../services/api";
 
@@ -15,14 +16,29 @@ interface Employee {
   EmployeeID: string;
   Name: string;
   Email: string;
+  EmployeeLogin: string;
+  PositionCode?: string;
   Title: string;
-  WorkUnitID: string;
+  SupervisorID?: string;
+  ManagerID?: string;
+  Step?: string;
+  Level?: string;
+  ReportingLevel?: string;
+  WorkUnitID?: string;
   WorkUnitName?: string;
   DepartmentID: string;
   DepartmentName?: string;
-  EmployeeType: string;
+  IsPDRRequired: string;
+  IsLFLicRequired: string;
   WorkType: string;
+  EmployeeType: string;
+  WorkLocation?: string;
+  DateEmployed: string;
   Status: string;
+  TerminationDate?: string;
+  FTE: number;
+  KnowBe4Classification?: string;
+  DATSClassification?: string;
 }
 
 interface Department {
@@ -41,9 +57,19 @@ function EmployeeList() {
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [workUnits, setWorkUnits] = useState<WorkUnit[]>([]);
+  const [supervisors, setSupervisors] = useState<Employee[]>([]);
+  const [managers, setManagers] = useState<Employee[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Filter states
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterDepartment, setFilterDepartment] = useState<string>("all");
+  const [filterWorkUnit, setFilterWorkUnit] = useState<string>("all");
+  const [filterEmployeeType, setFilterEmployeeType] = useState<string>("all");
+  const [filterFTE, setFilterFTE] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -57,13 +83,27 @@ function EmployeeList() {
     EmployeeID: "0",
     Name: "",
     Email: "",
+    EmployeeLogin: "",
+    PositionCode: "",
     Title: "",
+    SupervisorID: "",
+    ManagerID: "",
+    Step: "",
+    Level: "",
+    ReportingLevel: "",
     DepartmentID: "",
     WorkUnitID: "",
-    EmployeeType: "Worker",
+    IsPDRRequired: "No",
+    IsLFLicRequired: "No",
     WorkType: "Permanent - Full Time",
+    EmployeeType: "Worker",
+    WorkLocation: "",
     DateEmployed: new Date().toISOString().split("T")[0],
     Status: "Active",
+    TerminationDate: "",
+    FTE: 1.0,
+    KnowBe4Classification: "",
+    DATSClassification: "",
   });
 
   useEffect(() => {
@@ -71,19 +111,67 @@ function EmployeeList() {
   }, []);
 
   useEffect(() => {
-    // Filter employees based on search query
+    // Filter employees based on search query and filters
+    let filtered = employees;
+
+    // Search filter
     if (searchQuery) {
-      const filtered = employees.filter(
+      filtered = filtered.filter(
         (employee) =>
           employee.Name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           employee.Email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          employee.Title?.toLowerCase().includes(searchQuery.toLowerCase()),
+          employee.Title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          employee.EmployeeID?.toLowerCase().includes(
+            searchQuery.toLowerCase(),
+          ),
       );
-      setFilteredEmployees(filtered);
-    } else {
-      setFilteredEmployees(employees);
     }
-  }, [searchQuery, employees]);
+
+    // Status filter
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((emp) => emp.Status === filterStatus);
+    }
+
+    // Department filter
+    if (filterDepartment !== "all") {
+      filtered = filtered.filter(
+        (emp) => String(emp.DepartmentID) === filterDepartment,
+      );
+    }
+
+    // Work Unit filter
+    if (filterWorkUnit !== "all") {
+      filtered = filtered.filter(
+        (emp) => String(emp.WorkUnitID) === filterWorkUnit,
+      );
+    }
+
+    // Employee Type filter
+    if (filterEmployeeType !== "all") {
+      filtered = filtered.filter(
+        (emp) => emp.EmployeeType === filterEmployeeType,
+      );
+    }
+
+    // FTE filter
+    if (filterFTE !== "all") {
+      if (filterFTE === "full") {
+        filtered = filtered.filter((emp) => emp.FTE >= 1.0);
+      } else if (filterFTE === "part") {
+        filtered = filtered.filter((emp) => emp.FTE < 1.0 && emp.FTE > 0);
+      }
+    }
+
+    setFilteredEmployees(filtered);
+  }, [
+    searchQuery,
+    employees,
+    filterStatus,
+    filterDepartment,
+    filterWorkUnit,
+    filterEmployeeType,
+    filterFTE,
+  ]);
 
   const fetchData = async () => {
     try {
@@ -94,10 +182,36 @@ function EmployeeList() {
         workUnitAPI.getAll(),
       ]);
 
-      setEmployees(employeesRes.data || []);
-      setFilteredEmployees(employeesRes.data || []);
+      const employeeData = employeesRes.data || [];
+
+      setEmployees(employeeData);
+      setFilteredEmployees(employeeData);
       setDepartments(deptRes.data || []);
       setWorkUnits(wuRes.data || []);
+
+      // Filter supervisors (Supervisor, Manager, Senior Manager, Council Member, City Manager)
+      const supervisorList = employeeData.filter((emp: Employee) =>
+        [
+          "Supervisor",
+          "Manager",
+          "Senior Manager",
+          "Council Member",
+          "City Manager",
+        ].includes(emp.EmployeeType),
+      );
+      setSupervisors(supervisorList);
+
+      // Filter managers (Manager, Senior Manager, Council Member, City Manager)
+      const managerList = employeeData.filter((emp: Employee) =>
+        [
+          "Manager",
+          "Senior Manager",
+          "Council Member",
+          "City Manager",
+        ].includes(emp.EmployeeType),
+      );
+      setManagers(managerList);
+
       setError("");
     } catch (err: any) {
       setError("Error fetching data. Make sure the backend is running.");
@@ -111,22 +225,39 @@ function EmployeeList() {
     try {
       // Validation
       if (
-        !formData.ID ||
+        !formData.EmployeeID ||
         !formData.Name ||
         !formData.Email ||
         !formData.DepartmentID
       ) {
-        alert("ID, Name, Email, and Department are required");
+        alert("Employee ID, Name, Email, and Department are required");
         return;
       }
 
-      await employeeAPI.create(formData);
+      // Generate unique ID if not provided
+      let systemId = formData.ID;
+      if (!systemId) {
+        // Generate unique ID: EMP + EmployeeID + random suffix
+        const randomSuffix = Math.random()
+          .toString(36)
+          .substring(2, 6)
+          .toUpperCase();
+        systemId = `EMP${formData.EmployeeID}_${randomSuffix}`;
+      }
+
+      const employeeData = {
+        ...formData,
+        ID: systemId,
+      };
+
+      await employeeAPI.create(employeeData);
       await fetchData();
       setIsAddModalOpen(false);
       resetForm();
     } catch (err: any) {
       console.error("Error creating employee:", err);
-      alert(err.response?.data?.error || "Failed to create employee");
+      const errorMsg = err.response?.data?.error || "Failed to create employee";
+      alert(errorMsg);
     }
   };
 
@@ -163,30 +294,68 @@ function EmployeeList() {
       EmployeeID: "0",
       Name: "",
       Email: "",
+      EmployeeLogin: "",
+      PositionCode: "",
       Title: "",
+      SupervisorID: "",
+      ManagerID: "",
+      Step: "",
+      Level: "",
+      ReportingLevel: "",
       DepartmentID: "",
       WorkUnitID: "",
-      EmployeeType: "Worker",
+      IsPDRRequired: "No",
+      IsLFLicRequired: "No",
       WorkType: "Permanent - Full Time",
+      EmployeeType: "Worker",
+      WorkLocation: "",
       DateEmployed: new Date().toISOString().split("T")[0],
       Status: "Active",
+      TerminationDate: "",
+      FTE: 1.0,
+      KnowBe4Classification: "",
+      DATSClassification: "",
     });
   };
 
   const openEditModal = (employee: Employee) => {
     setCurrentEmployee(employee);
+
+    // Format date for input field (YYYY-MM-DD)
+    const formatDate = (dateString: string) => {
+      if (!dateString) return new Date().toISOString().split("T")[0];
+      // If it's already in YYYY-MM-DD format, use it
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+      // Otherwise, parse and format
+      return new Date(dateString).toISOString().split("T")[0];
+    };
+
     setFormData({
       ID: employee.ID,
       EmployeeID: employee.EmployeeID || "0",
       Name: employee.Name,
       Email: employee.Email,
+      EmployeeLogin: employee.EmployeeLogin || employee.Email,
+      PositionCode: employee.PositionCode || "",
       Title: employee.Title || "",
-      DepartmentID: employee.DepartmentID || "",
-      WorkUnitID: employee.WorkUnitID || "",
-      EmployeeType: employee.EmployeeType || "Worker",
+      SupervisorID: employee.SupervisorID || "",
+      ManagerID: employee.ManagerID || "",
+      Step: employee.Step || "",
+      Level: employee.Level || "",
+      ReportingLevel: employee.ReportingLevel || "",
+      DepartmentID: String(employee.DepartmentID) || "",
+      WorkUnitID: String(employee.WorkUnitID) || "",
+      IsPDRRequired: employee.IsPDRRequired || "No",
+      IsLFLicRequired: employee.IsLFLicRequired || "No",
       WorkType: employee.WorkType || "Permanent - Full Time",
-      DateEmployed: new Date().toISOString().split("T")[0],
+      EmployeeType: employee.EmployeeType || "Worker",
+      WorkLocation: employee.WorkLocation || "",
+      DateEmployed: formatDate(employee.DateEmployed),
       Status: employee.Status || "Active",
+      TerminationDate: employee.TerminationDate || "",
+      FTE: employee.FTE || 1.0,
+      KnowBe4Classification: employee.KnowBe4Classification || "",
+      DATSClassification: employee.DATSClassification || "",
     });
     setIsEditModalOpen(true);
   };
@@ -197,7 +366,8 @@ function EmployeeList() {
   };
 
   const getWorkUnitsByDepartment = (deptId: string) => {
-    return workUnits.filter((wu) => wu.DepartmentId === deptId);
+    if (!deptId) return [];
+    return workUnits.filter((wu) => String(wu.DepartmentId) === String(deptId));
   };
 
   if (loading) {
@@ -267,6 +437,144 @@ function EmployeeList() {
         </div>
       </div>
 
+      {/* Filters Toggle */}
+      <div className="mt-4">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+        >
+          <FunnelIcon className="h-5 w-5" />
+          {showFilters ? "Hide Filters" : "Show Filters"}
+          <span className="ml-2 text-xs text-gray-500">
+            ({filteredEmployees.length} of {employees.length} employees)
+          </span>
+        </button>
+      </div>
+
+      {/* Filters */}
+      {showFilters && (
+        <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="input-field w-full"
+              >
+                <option value="all">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="On Leave">On Leave</option>
+              </select>
+            </div>
+
+            {/* Department Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Department
+              </label>
+              <select
+                value={filterDepartment}
+                onChange={(e) => {
+                  setFilterDepartment(e.target.value);
+                  setFilterWorkUnit("all"); // Reset work unit when department changes
+                }}
+                className="input-field w-full"
+              >
+                <option value="all">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept.Id} value={String(dept.Id)}>
+                    {dept.Name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Work Unit Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Work Unit
+              </label>
+              <select
+                value={filterWorkUnit}
+                onChange={(e) => setFilterWorkUnit(e.target.value)}
+                className="input-field w-full"
+                disabled={filterDepartment === "all"}
+              >
+                <option value="all">All Work Units</option>
+                {workUnits
+                  .filter((wu) =>
+                    filterDepartment === "all"
+                      ? true
+                      : String(wu.DepartmentId) === filterDepartment,
+                  )
+                  .map((wu) => (
+                    <option key={wu.Id} value={String(wu.Id)}>
+                      {wu.Name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Employee Type Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Employee Type
+              </label>
+              <select
+                value={filterEmployeeType}
+                onChange={(e) => setFilterEmployeeType(e.target.value)}
+                className="input-field w-full"
+              >
+                <option value="all">All Types</option>
+                <option value="City Manager">City Manager</option>
+                <option value="Council Member">Council Member</option>
+                <option value="Senior Manager">Senior Manager</option>
+                <option value="Manager">Manager</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Worker">Worker</option>
+              </select>
+            </div>
+
+            {/* FTE Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                FTE
+              </label>
+              <select
+                value={filterFTE}
+                onChange={(e) => setFilterFTE(e.target.value)}
+                className="input-field w-full"
+              >
+                <option value="all">All FTE</option>
+                <option value="full">Full-time (≥1.0)</option>
+                <option value="part">Part-time (&lt;1.0)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => {
+                setFilterStatus("all");
+                setFilterDepartment("all");
+                setFilterWorkUnit("all");
+                setFilterEmployeeType("all");
+                setFilterFTE("all");
+              }}
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="mt-8 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -288,6 +596,9 @@ function EmployeeList() {
                       Department
                     </th>
                     <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      FTE
+                    </th>
+                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                       Status
                     </th>
                     <th className="relative py-3.5 pl-3 pr-4 sm:pr-6">
@@ -298,7 +609,7 @@ function EmployeeList() {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredEmployees.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center">
+                      <td colSpan={7} className="py-12 text-center">
                         <div className="text-gray-500">
                           <p className="text-lg font-medium">
                             No employees found
@@ -326,6 +637,9 @@ function EmployeeList() {
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {employee.DepartmentName || "-"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {employee.FTE.toFixed(2)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <span
@@ -414,23 +728,56 @@ function EmployeeList() {
                     >
                       {isAddModalOpen ? "Add New Employee" : "Edit Employee"}
                     </Dialog.Title>
-                    <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div className="mt-6 grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto px-1">
                       {isAddModalOpen && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Employee ID *
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.ID}
-                            onChange={(e) =>
-                              setFormData({ ...formData, ID: e.target.value })
-                            }
-                            className="mt-1 input-field"
-                            placeholder="EMP001"
-                          />
-                        </div>
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              System ID (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.ID}
+                              onChange={(e) =>
+                                setFormData({ ...formData, ID: e.target.value })
+                              }
+                              className="mt-1 input-field"
+                              placeholder="Leave empty for auto-generate"
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                              Leave empty to auto-generate
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                              Employee ID *
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.EmployeeID}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  EmployeeID: e.target.value,
+                                })
+                              }
+                              className="mt-1 input-field"
+                              placeholder="12345"
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                              This is the employee number/badge ID
+                            </p>
+                          </div>
+                        </>
                       )}
+
+                      {/* Basic Information */}
+                      <div className="col-span-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-2">
+                          Basic Information
+                        </h4>
+                      </div>
+
                       <div className={isAddModalOpen ? "" : "col-span-2"}>
                         <label className="block text-sm font-medium text-gray-700">
                           Name *
@@ -445,6 +792,7 @@ function EmployeeList() {
                           placeholder="John Doe"
                         />
                       </div>
+
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-700">
                           Email *
@@ -459,6 +807,43 @@ function EmployeeList() {
                           placeholder="john.doe@camrose.ca"
                         />
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Employee Login
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.EmployeeLogin}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              EmployeeLogin: e.target.value,
+                            })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="jdoe"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Position Code
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.PositionCode}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              PositionCode: e.target.value,
+                            })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="PC001"
+                        />
+                      </div>
+
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-700">
                           Title
@@ -473,6 +858,14 @@ function EmployeeList() {
                           placeholder="Software Developer"
                         />
                       </div>
+
+                      {/* Organization */}
+                      <div className="col-span-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-4">
+                          Organization
+                        </h4>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Department *
@@ -496,6 +889,7 @@ function EmployeeList() {
                           ))}
                         </select>
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Work Unit
@@ -521,6 +915,108 @@ function EmployeeList() {
                           )}
                         </select>
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Supervisor
+                        </label>
+                        <select
+                          value={formData.SupervisorID}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              SupervisorID: e.target.value,
+                            })
+                          }
+                          className="mt-1 select-field"
+                        >
+                          <option value="">No Supervisor</option>
+                          {supervisors.map((sup) => (
+                            <option key={sup.ID} value={sup.ID}>
+                              {sup.Name} ({sup.EmployeeType})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Manager
+                        </label>
+                        <select
+                          value={formData.ManagerID}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              ManagerID: e.target.value,
+                            })
+                          }
+                          className="mt-1 select-field"
+                        >
+                          <option value="">No Manager</option>
+                          {managers.map((mgr) => (
+                            <option key={mgr.ID} value={mgr.ID}>
+                              {mgr.Name} ({mgr.EmployeeType})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Position Details */}
+                      <div className="col-span-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-4">
+                          Position Details
+                        </h4>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Step
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.Step}
+                          onChange={(e) =>
+                            setFormData({ ...formData, Step: e.target.value })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="1"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Level
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.Level}
+                          onChange={(e) =>
+                            setFormData({ ...formData, Level: e.target.value })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="5"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Reporting Level
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.ReportingLevel}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              ReportingLevel: e.target.value,
+                            })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="3"
+                        />
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Employee Type
@@ -540,8 +1036,17 @@ function EmployeeList() {
                           <option value="Manager">Manager</option>
                           <option value="Senior Manager">Senior Manager</option>
                           <option value="Council Member">Council Member</option>
+                          <option value="City Manager">City Manager</option>
                         </select>
                       </div>
+
+                      {/* Employment Details */}
+                      <div className="col-span-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-4">
+                          Employment Details
+                        </h4>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Work Type
@@ -569,6 +1074,221 @@ function EmployeeList() {
                             Temporary - Casual
                           </option>
                         </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Work Location
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.WorkLocation}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              WorkLocation: e.target.value,
+                            })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="City Hall"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Date Employed
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.DateEmployed}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              DateEmployed: e.target.value,
+                            })
+                          }
+                          className="mt-1 input-field"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          FTE (Full-Time Equivalent)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="1"
+                          value={formData.FTE}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Allow the field to be empty or have a value
+                            if (value === "") {
+                              setFormData({
+                                ...formData,
+                                FTE: 0,
+                              });
+                            } else {
+                              const numValue = parseFloat(value);
+                              if (!isNaN(numValue)) {
+                                setFormData({
+                                  ...formData,
+                                  FTE: numValue,
+                                });
+                              }
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // On blur, ensure valid range and default
+                            const numValue = parseFloat(e.target.value);
+                            if (isNaN(numValue) || numValue === 0) {
+                              setFormData({
+                                ...formData,
+                                FTE: 1.0,
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                FTE: Math.min(Math.max(numValue, 0.01), 1),
+                              });
+                            }
+                          }}
+                          className="mt-1 input-field"
+                          placeholder="1.00"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          1.00 = Full-time, 0.50 = Half-time, 0.25 =
+                          Quarter-time
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Status
+                        </label>
+                        <select
+                          value={formData.Status}
+                          onChange={(e) =>
+                            setFormData({ ...formData, Status: e.target.value })
+                          }
+                          className="mt-1 select-field"
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                          <option value="On Leave">On Leave</option>
+                        </select>
+                      </div>
+
+                      {/* Termination Date - Only show when Inactive */}
+                      {formData.Status === "Inactive" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Termination Date
+                          </label>
+                          <input
+                            type="date"
+                            value={formData.TerminationDate}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                TerminationDate: e.target.value,
+                              })
+                            }
+                            className="mt-1 input-field"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Date employee became inactive
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Requirements */}
+                      <div className="col-span-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-4">
+                          Requirements
+                        </h4>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          PDR Required
+                        </label>
+                        <select
+                          value={formData.IsPDRRequired}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              IsPDRRequired: e.target.value,
+                            })
+                          }
+                          className="mt-1 select-field"
+                        >
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          LF License Required
+                        </label>
+                        <select
+                          value={formData.IsLFLicRequired}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              IsLFLicRequired: e.target.value,
+                            })
+                          }
+                          className="mt-1 select-field"
+                        >
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+
+                      {/* Classifications */}
+                      <div className="col-span-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-4">
+                          Classifications
+                        </h4>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          KnowBe4 Classification
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.KnowBe4Classification}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              KnowBe4Classification: e.target.value,
+                            })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="User"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          DATS Classification
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.DATSClassification}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              DATSClassification: e.target.value,
+                            })
+                          }
+                          className="mt-1 input-field"
+                          placeholder="Level 1"
+                        />
                       </div>
                     </div>
                   </div>

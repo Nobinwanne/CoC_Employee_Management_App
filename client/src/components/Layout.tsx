@@ -4,6 +4,7 @@ import {
   BuildingOfficeIcon,
   CubeIcon,
   ChartBarSquareIcon,
+  DocumentChartBarIcon,
 } from "@heroicons/react/24/outline";
 
 function Layout() {
@@ -83,6 +84,20 @@ function Layout() {
             >
               <ChartBarSquareIcon className="h-5 w-5 mr-2" />
               Org Chart
+            </NavLink>
+
+            <NavLink
+              to="/reports"
+              className={({ isActive }) =>
+                `inline-flex items-center px-1 pt-4 pb-3 border-b-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                }`
+              }
+            >
+              <DocumentChartBarIcon className="h-5 w-5 mr-2" />
+              Reports
             </NavLink>
           </div>
         </div>

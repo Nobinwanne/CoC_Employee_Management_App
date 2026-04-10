@@ -4,6 +4,7 @@ import EmployeeList from "./components/EmployeeList";
 import DepartmentList from "./components/DepartmentList";
 import WorkUnitList from "./components/WorkUnitList";
 import OrgChart from "./components/OrgChart";
+import Reports from "./components/Reports";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="departments" element={<DepartmentList />} />
           <Route path="workunits" element={<WorkUnitList />} />
           <Route path="orgchart" element={<OrgChart />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="*" element={<Navigate to="/employees" replace />} />
         </Route>
       </Routes>
